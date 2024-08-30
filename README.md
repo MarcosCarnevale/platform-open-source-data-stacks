@@ -28,3 +28,4 @@ A arquitetura do projeto é composta por:
 - minIO: Ferramenta open source para armazenamento de dados
 - PostgreSQL: Banco de dados open source
 - Apache Spark: Ferramenta open source para processamento de dados
+- Trino: Motor de consulta
