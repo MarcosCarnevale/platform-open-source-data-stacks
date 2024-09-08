@@ -166,7 +166,36 @@ kubectl exec --stdin --tty airflow-webserver-596bdcfd74-nqq6x -n airflow -- /bin
 # você deve ver a lista de variáveis de ambiente que foram aplicadas anteriormente
 # use o comando "from airflow.models import Variable; print(Variable.get('MY_S3_BUCKET'))", exit()" para exibir o valor da variável MY_S3_BUCKET
 
-# 19.  Acessando o Airflow
+# 19. Instalando bibliotecas adicionais
+docker build -t airflow-custom-image:1.0.0 ./main/deployer/airflow/airflow-docker
+
+# O comando acima cria uma imagem Docker chamada airflow-custom-image com a tag 1.0.0
+# a imagem é criada a partir do Dockerfile contido no diretório ./main/deployer/airflow/airflow-docker
+# este Dockerfile instala as bibliotecas adicionais necessárias para o Airflow, como por exemplo, o great_expectations
+# você pode adicionar outras bibliotecas ao Dockerfile conforme necessário
+
+# 20. Atualizando o Airflow com a imagem customizada no kind cluster
+kind load docker-image airflow-custom-image:1.0.0 --name airflow-cluster
+
+# O comando acima carrega a imagem Docker airflow-custom-image:1.0.0 no cluster kind airflow-cluster
+# desta forma, o Airflow poderá utilizar a imagem customizada que contém as bibliotecas adicionais
+# Importante: O comando kind load docker-image é específico para o kind, ele carrega a imagem Docker no cluster kind
+# caso você esteja utilizando um cluster Kubernetes diferente, você pode usar o comando docker push para enviar a imagem para um registro de contêineres
+# e depois atualizar o Helm Chart do Airflow para usar a imagem personalizada
+
+# 21. Atualizando o Airflow com a imagem customizada
+helm upgrade --install airflow apache-airflow/airflow -n airflow -f ./main/deployer/airflow/values.yaml --debug
+
+# O comando acima instala o Airflow no namespace airflow com as configurações personalizadas do arquivo values.yaml
+# este arquivo contém as configaçoes padrão do Airflow, você pode editá-lo para personalizar as configurações do Airflow
+# de acordo com suas necessidades
+# Importante: O arquivo values.yaml é um arquivo de configuração do Helm, ele é utilizado para definir as configurações
+# do pacote que será instalado no cluster Kubernetes
+# caso você deseje alterar as configurações do Airflow, você pode editar este arquivo e depois instalar o Airflow novamente
+# para aplicar as alterações
+
+
+# XX.  Acessando o Airflow
 kubectl port-forward svc/airflow-webserver 8080:8080 -n airflow
 echo "Visit http://127.0.0.1:8080 to use Airflow"
 
