@@ -1,2 +1,2 @@
 # Ignorando arquivos de credenciais
-.main\deployer\airflow\credentials\*
+.\main\deployer\airflow\credentials\*
