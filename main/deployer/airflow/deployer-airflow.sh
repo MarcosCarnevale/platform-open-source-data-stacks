@@ -141,7 +141,7 @@ helm ls -n airflow
 # você deve perceber que temos na saida 1 REVISON, decorrente da atualização das variáveis de ambiente
 
 # 15. Atualizando o Airflow com as variáveis de ambiente
-helm upgrade --install airflow apache-airflow/airflow -n airflow -f ./main/deployer/airflow/values.yaml --debug
+helm upgrade --install airflow apache-airflow/airflow -n airflow -f ./main/deployer/airflow/values.yaml --debug --timeout 10m0s
 
 # O comando acima instala o Airflow no namespace airflow com as configurações personalizadas do arquivo values.yaml
 # este arquivo contém as configurações padrão do Airflow, você pode editá-lo para personalizar as configurações do Airflow
@@ -183,6 +183,15 @@ kind load docker-image airflow-custom-image:1.0.0 --name airflow-cluster
 # caso você esteja utilizando um cluster Kubernetes diferente, você pode usar o comando docker push para enviar a imagem para um registro de contêineres
 # e depois atualizar o Helm Chart do Airflow para usar a imagem personalizada
 
+# Após carregar a imagem no cluster kind será necessário atualizar o arquivo values.yaml com a imagem customizada
+# Default airflow repository -- overridden by all the specific images below
+# defaultAirflowRepository: apache/airflow <-- antigo
+# defaultAirflowRepository: airflow-custom-image <-- novo
+
+# # Default airflow tag to deploy
+# defaultAirflowTag: "2.9.3" <-- antigo
+# defaultAirflowTag: "1.0.0" <-- novo
+
 # 21. Atualizando o Airflow com a imagem customizada
 helm upgrade --install airflow apache-airflow/airflow -n airflow -f ./main/deployer/airflow/values.yaml --debug
 
@@ -193,6 +202,41 @@ helm upgrade --install airflow apache-airflow/airflow -n airflow -f ./main/deplo
 # do pacote que será instalado no cluster Kubernetes
 # caso você deseje alterar as configurações do Airflow, você pode editar este arquivo e depois instalar o Airflow novamente
 # para aplicar as alterações
+
+# 22. Validando a atualização
+kubectl get pods -n airflow
+
+# todos os pods devem estar com o status Running
+# NAME                                 READY   STATUS    RESTARTS   AGE
+# airflow-postgresql-0                 1/1     Running   0          49m
+# airflow-scheduler-56db686fd-2hfmg    2/2     Running   0          32m
+# airflow-statsd-769b757665-l4f7z      1/1     Running   0          49m
+# airflow-triggerer-0                  2/2     Running   0          32m
+# airflow-webserver-79fd6d5ccd-dr7kv   1/1     Running   0          7m
+
+# 23. Acessando o Airflow e validando a instalação
+kubectl exec airflow-webserver-79fd6d5ccd-dr7kv -n airflow -- airflow info
+
+# O comando acima executa o comando airflow info no pod airflow-webserver no namespace airflow
+# este comando exibe informações sobre o Airflow, como a versão instalada e as configurações do banco de dados
+# você deve ver a versão do Airflow e outras informações relevantes
+# caso o comando retorne um erro, é possível que haja algum problema na instalação
+# neste caso, você pode verificar os logs do pod para identificar o problema
+
+# 24. Configurando o gitSync para sincronizar os DAGs
+# Para uso do gitSync é necessário configurar as variáveis de ambiente local
+export GIT_SYNC_USERNAME='<seu-usuario-git>'
+export GIT_SYNC_PASSWORD='<sua-senha-git>'
+
+# Desta forma, iremos executar o arquivo encoding.py para codificar as variáveis de ambiente e assim criar o arquivo git-sync-secret.yaml
+
+kubectl apply -f ./main/deployer/airflow/git-sync.yaml
+
+# O comando acima aplica o arquivo git-sync.yaml no cluster Kubernetes
+# este arquivo contém a configuração do gitSync, que é utilizado para sincronizar os DAGs do Airflow com um repositório Git 
+# o gitSync é uma ferramenta que permite manter os DAGs do Airflow atualizados com as últimas alterações no repositório Git
+# desta forma, você pode gerenciar seus DAGs de forma eficiente e automatizada
+
 
 
 # XX.  Acessando o Airflow
@@ -208,6 +252,4 @@ echo "Visit http://127.0.0.1:8080 to use Airflow"
 # através de um endereço local, caso a porta 8080 esteja em uso, você pode alterar a porta de encaminhamento
 # basta alterar o segundo valor do comando, por exemplo: kubectl port-forward svc/airflow-webserver 8081:8080 -n airflow
 # neste caso, o Airflow estará acessível através do endereço http://127.0.0.1:8081
-
-
 
