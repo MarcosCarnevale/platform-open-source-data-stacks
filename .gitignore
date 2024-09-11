@@ -1,1 +1,2 @@
-./main/deployer/airflow/git-credentials.yaml
+# Ignorando arquivos de credenciais
+.main\deployer\airflow\credentials\*
