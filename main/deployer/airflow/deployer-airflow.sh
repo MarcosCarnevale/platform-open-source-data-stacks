@@ -141,7 +141,7 @@ helm ls -n airflow
 # você deve perceber que temos na saida 1 REVISON, decorrente da atualização das variáveis de ambiente
 
 # 15. Atualizando o Airflow com as variáveis de ambiente
-helm upgrade --install airflow apache-airflow/airflow -n airflow -f ./main/deployer/airflow/values.yaml --debug
+helm upgrade --install airflow apache-airflow/airflow -n airflow -f ./main/deployer/airflow/values.yaml --debug --timeout 10m0s
 
 # O comando acima instala o Airflow no namespace airflow com as configurações personalizadas do arquivo values.yaml
 # este arquivo contém as configurações padrão do Airflow, você pode editá-lo para personalizar as configurações do Airflow
@@ -183,6 +183,15 @@ kind load docker-image airflow-custom-image:1.0.0 --name airflow-cluster
 # caso você esteja utilizando um cluster Kubernetes diferente, você pode usar o comando docker push para enviar a imagem para um registro de contêineres
 # e depois atualizar o Helm Chart do Airflow para usar a imagem personalizada
 
+# Após carregar a imagem no cluster kind será necessário atualizar o arquivo values.yaml com a imagem customizada
+# Default airflow repository -- overridden by all the specific images below
+# defaultAirflowRepository: apache/airflow <-- antigo
+# defaultAirflowRepository: airflow-custom-image <-- novo
+
+# # Default airflow tag to deploy
+# defaultAirflowTag: "2.9.3" <-- antigo
+# defaultAirflowTag: "1.0.0" <-- novo
+
 # 21. Atualizando o Airflow com a imagem customizada
 helm upgrade --install airflow apache-airflow/airflow -n airflow -f ./main/deployer/airflow/values.yaml --debug
 
@@ -194,10 +203,62 @@ helm upgrade --install airflow apache-airflow/airflow -n airflow -f ./main/deplo
 # caso você deseje alterar as configurações do Airflow, você pode editar este arquivo e depois instalar o Airflow novamente
 # para aplicar as alterações
 
+# 22. Validando a atualização
+kubectl get pods -n airflow
+
+# todos os pods devem estar com o status Running
+# NAME                                 READY   STATUS    RESTARTS   AGE
+# airflow-postgresql-0                 1/1     Running   0          49m
+# airflow-scheduler-56db686fd-2hfmg    2/2     Running   0          32m
+# airflow-statsd-769b757665-l4f7z      1/1     Running   0          49m
+# airflow-triggerer-0                  2/2     Running   0          32m
+# airflow-webserver-79fd6d5ccd-dr7kv   1/1     Running   0          7m
+
+# 23. Acessando o Airflow e validando a instalação
+kubectl exec airflow-webserver-79fd6d5ccd-dr7kv -n airflow -- airflow info
+
+# O comando acima executa o comando airflow info no pod airflow-webserver no namespace airflow
+# este comando exibe informações sobre o Airflow, como a versão instalada e as configurações do banco de dados
+# você deve ver a versão do Airflow e outras informações relevantes
+# caso o comando retorne um erro, é possível que haja algum problema na instalação
+# neste caso, você pode verificar os logs do pod para identificar o problema
+
+# 24. Configurando o gitSync para sincronizar os DAGs
+# Sera necessário cadastrar uma deploy key no repositório do github
+# no github acessar: repository > settings > deploy keys > add deploy key
+# em seu terminal, execute o comando abaixo para gerar uma chave ssh
+# ssh-keygen -t rsa -b 4096 -C "<nome_da_sua_chave>", uma vez criada a chave, copie o conteúdo da chave publica
+# para acessar a chave publica, execute o comando cat ~/.ssh/id_rsa.pub
+# cole o conteúdo da chave publica no campo "key".
+# Importante: Marque a opção "Allow write access" para que o Airflow possa sincronizar os DAGs
+
+# 25. Configurando o gitSync para sincronizar os DAGs
+chmod 400 ~/.ssh/id_rsa
+kubectl create secret generic airflow-git-secret --from-file=gitSshKey=/root/.ssh/id_rsa -n airflow
+
+# O comando acima cria um segredo chamado airflow-git-secret no namespace airflow
+# este segredo é utilizado para armazenar a chave SSH que será utilizada pelo gitSync para sincronizar os DAGs
+# a chave SSH é necessária para autenticar o Airflow no repositório Git e baixar os DAGs
+# apos criar o segredo iremos atualizar o arquivo values.yaml com as configurações do gitSync
+# gitSync:
+# sshKeySecret: airflow-git-secret
+
+# 26. Atualizando o Airflow com as configurações do gitSync
+helm upgrade --install airflow apache-airflow/airflow -n airflow -f ./main/deployer/airflow/values.yaml --debug
+
+# O comando acima instala o Airflow no namespace airflow com as configurações personalizadas do arquivo values.yaml
+# este arquivo contém as configurações padrão do Airflow, você pode editá-lo para personalizar as configurações do Airflow
+
+# 27. Validando a atualização
+kubectl get pods -n airflow
+kubectl logs airflow-scheduler-7fdbdfd64d-zp248 -c git-sync -n airflow
+
+
+
 
 # XX.  Acessando o Airflow
-kubectl port-forward svc/airflow-webserver 8080:8080 -n airflow
 echo "Visit http://127.0.0.1:8080 to use Airflow"
+kubectl port-forward svc/airflow-webserver 8080:8080 -n airflow
 
 # O comando acima cria um encaminhamento de porta para o serviço airflow-webserver no namespace airflow
 # assim, é possível acessar o Airflow através do endereço http://127.0.0.1:8080
@@ -208,6 +269,4 @@ echo "Visit http://127.0.0.1:8080 to use Airflow"
 # através de um endereço local, caso a porta 8080 esteja em uso, você pode alterar a porta de encaminhamento
 # basta alterar o segundo valor do comando, por exemplo: kubectl port-forward svc/airflow-webserver 8081:8080 -n airflow
 # neste caso, o Airflow estará acessível através do endereço http://127.0.0.1:8081
-
-
 
