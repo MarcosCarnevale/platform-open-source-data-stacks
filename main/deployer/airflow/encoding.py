@@ -8,15 +8,16 @@ def encode_credentials(username, password):
     return encoded_username, encoded_password
 
 def create_yaml(encoded_username, encoded_password):
-    secret_yaml = f"""
-    apiVersion: v1
-    kind: Secret
-    metadata:
+    secret_yaml = f"""apiVersion: v1
+kind: Secret
+metadata:
     name: git-credentials
-    data:
-        GIT_SYNC_USERNAME: {encoded_username}
-        GIT_SYNC_PASSWORD: {encoded_password}
-    """
+data:
+    GIT_SYNC_USERNAME: {encoded_username}
+    GIT_SYNC_PASSWORD: {encoded_password}
+    GITSYNC_USERNAME: {encoded_username}
+    GITSYNC_PASSWORD: {encoded_password}
+"""
     # Saida na mesma pasta que o script ./pasta_do_script/credentials/git-credentials.yaml
     out = os.path.join(os.path.dirname(__file__), 'credentials/')
     file_name = 'git-credentials.yaml'
