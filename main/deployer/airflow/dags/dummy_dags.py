@@ -1,5 +1,5 @@
 from airflow import DAG
-from airflow.operators.python_operator import PythonOperator
+from airflow.operators.python_operator import ShortCircuitOperator
 from datetime import datetime
 import json
 
@@ -29,18 +29,16 @@ dag = DAG(
 )
 
 # Adicionar a tarefa ao DAG
-print_json_task_success = PythonOperator(
-    task_id='print_success_json',
+print_json_task_success = ShortCircuitOperator(
+    task_id='print_json_task_success',
     python_callable=print_success_json,
     dag=dag
 )
 
-# Adicionar a tarefa ao DAG
-print_json_task_failure = PythonOperator(
-    task_id='print_failure_json',
+print_json_task_failure = ShortCircuitOperator(
+    task_id='print_json_task_failure',
     python_callable=print_failure_json,
     dag=dag
 )
 
-# Definir a ordem das tarefas (se houver mais de uma)
 print_json_task_success >> print_json_task_failure
