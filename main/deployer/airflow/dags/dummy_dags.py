@@ -1,9 +1,9 @@
 from airflow import DAG
-from airflow.operators.python_operator import ShortCircuitOperator
+from airflow.operators.python_operator import PythonOperator
 from datetime import datetime
 import json
 
-# Definir a função de tarefa
+# Definir a função de tarefa de sucesso
 def print_success_json():
     success_message = {
         "status": "success",
@@ -11,10 +11,11 @@ def print_success_json():
     }
     print(json.dumps(success_message))
 
+# Definir a função de tarefa de falha
 def print_failure_json():
     failure_message = {
         "status": "failure",
-        "message": "DAG failed to execute"
+        "message": "DAG execution failed"
     }
     print(json.dumps(failure_message))
 
@@ -28,17 +29,18 @@ dag = DAG(
     schedule_interval=None
 )
 
-# Adicionar a tarefa ao DAG
-print_json_task_success = ShortCircuitOperator(
+# Adicionar as tarefas ao DAG
+print_json_task_success = PythonOperator(
     task_id='print_json_task_success',
     python_callable=print_success_json,
     dag=dag
 )
 
-print_json_task_failure = ShortCircuitOperator(
+print_json_task_failure = PythonOperator(
     task_id='print_json_task_failure',
     python_callable=print_failure_json,
     dag=dag
 )
 
+# Definir a ordem das tarefas
 print_json_task_success >> print_json_task_failure
