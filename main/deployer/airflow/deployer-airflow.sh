@@ -224,24 +224,41 @@ kubectl exec airflow-webserver-79fd6d5ccd-dr7kv -n airflow -- airflow info
 # neste caso, você pode verificar os logs do pod para identificar o problema
 
 # 24. Configurando o gitSync para sincronizar os DAGs
-# Para uso do gitSync é necessário configurar as variáveis de ambiente local
-export GIT_SYNC_USERNAME='<seu-usuario-git>'
-export GIT_SYNC_PASSWORD='<sua-senha-git>'
+# Sera necessário cadastrar uma deploy key no repositório do github
+# no github acessar: repository > settings > deploy keys > add deploy key
+# em seu terminal, execute o comando abaixo para gerar uma chave ssh
+# ssh-keygen -t rsa -b 4096 -C "<nome_da_sua_chave>", uma vez criada a chave, copie o conteúdo da chave publica
+# para acessar a chave publica, execute o comando cat ~/.ssh/id_rsa.pub
+# cole o conteúdo da chave publica no campo "key".
+# Importante: Marque a opção "Allow write access" para que o Airflow possa sincronizar os DAGs
 
-# Desta forma, iremos executar o arquivo encoding.py para codificar as variáveis de ambiente e assim criar o arquivo git-sync-secret.yaml
+# 25. Configurando o gitSync para sincronizar os DAGs
+chmod 400 ~/.ssh/id_rsa
+kubectl create secret generic airflow-git-secret --from-file=gitSshKey=/root/.ssh/id_rsa -n airflow
 
-kubectl apply -f ./main/deployer/airflow/git-sync.yaml
+# O comando acima cria um segredo chamado airflow-git-secret no namespace airflow
+# este segredo é utilizado para armazenar a chave SSH que será utilizada pelo gitSync para sincronizar os DAGs
+# a chave SSH é necessária para autenticar o Airflow no repositório Git e baixar os DAGs
+# apos criar o segredo iremos atualizar o arquivo values.yaml com as configurações do gitSync
+# gitSync:
+# sshKeySecret: airflow-git-secret
 
-# O comando acima aplica o arquivo git-sync.yaml no cluster Kubernetes
-# este arquivo contém a configuração do gitSync, que é utilizado para sincronizar os DAGs do Airflow com um repositório Git 
-# o gitSync é uma ferramenta que permite manter os DAGs do Airflow atualizados com as últimas alterações no repositório Git
-# desta forma, você pode gerenciar seus DAGs de forma eficiente e automatizada
+# 26. Atualizando o Airflow com as configurações do gitSync
+helm upgrade --install airflow apache-airflow/airflow -n airflow -f ./main/deployer/airflow/values.yaml --debug
+
+# O comando acima instala o Airflow no namespace airflow com as configurações personalizadas do arquivo values.yaml
+# este arquivo contém as configurações padrão do Airflow, você pode editá-lo para personalizar as configurações do Airflow
+
+# 27. Validando a atualização
+kubectl get pods -n airflow
+kubectl logs airflow-scheduler-7fdbdfd64d-zp248 -c git-sync -n airflow
+
 
 
 
 # XX.  Acessando o Airflow
-kubectl port-forward svc/airflow-webserver 8080:8080 -n airflow
 echo "Visit http://127.0.0.1:8080 to use Airflow"
+kubectl port-forward svc/airflow-webserver 8080:8080 -n airflow
 
 # O comando acima cria um encaminhamento de porta para o serviço airflow-webserver no namespace airflow
 # assim, é possível acessar o Airflow através do endereço http://127.0.0.1:8080
