@@ -1,2 +1,3 @@
 # Ignorar o arquivo de credenciais do Git
 main/deployer/airflow/credentials/git-credentials.yaml
+linux-amd64/
