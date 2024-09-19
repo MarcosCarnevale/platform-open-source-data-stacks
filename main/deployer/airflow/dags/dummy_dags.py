@@ -2,9 +2,13 @@ from airflow import DAG
 from airflow.operators.python_operator import PythonOperator
 from datetime import datetime
 import json
+import time
 
 # Definir a função de tarefa de sucesso
 def print_success_json():
+    for i in range(180):
+        print(f"Task is running for {i} seconds")
+        time.sleep(1)
     success_message = {
         "status": "success",
         "message": "DAG executed successfully"
