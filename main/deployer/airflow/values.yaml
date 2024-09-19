@@ -2593,7 +2593,7 @@ dags:
     # git repo clone url
     # ssh example: git@github.com:apache/airflow.git
     # https example: https://github.com/apache/airflow.git
-    repo: ssh://git@github.com/MarcosCarnevale/platform-open-source-data-stacks.git
+    repo: https://github.com/MarcosCarnevale/platform-open-source-data-stacks.git
     branch: develop
     rev: HEAD
     # The git revision (branch, tag, or hash) to check out, v4 only
@@ -2620,7 +2620,7 @@ dags:
     #     GITSYNC_PASSWORD: <base64_encoded_git_password>
     # and specify the name of the secret below
     #
-    # credentialsSecret: git-credentials
+    credentialsSecret: git-credentials
     #
     #
     # If you are using an ssh clone url, you can load
@@ -2634,7 +2634,7 @@ dags:
     #     # key needs to be gitSshKey
     #     gitSshKey: <base64_encoded_data>
     # and specify the name of the secret below
-    sshKeySecret: airflow-git-secret
+    # sshKeySecret: airflow-ssh-secret
     #
     # Or set sshKeySecret with your key
     # sshKey: |-
