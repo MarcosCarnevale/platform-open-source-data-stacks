@@ -141,7 +141,7 @@ helm ls -n airflow
 # você deve perceber que temos na saida 1 REVISON, decorrente da atualização das variáveis de ambiente
 
 # 15. Atualizando o Airflow com as variáveis de ambiente
-helm upgrade --install airflow apache-airflow/airflow -n airflow -f ./main/deployer/airflow/values.yaml --debug --timeout 10m0s
+helm upgrade --install airflow apache-airflow/airflow -n airflow -f ./main/deployer/airflow/values_bkp.yaml --debug --timeout 10m0s
 
 # O comando acima instala o Airflow no namespace airflow com as configurações personalizadas do arquivo values.yaml
 # este arquivo contém as configurações padrão do Airflow, você pode editá-lo para personalizar as configurações do Airflow
@@ -193,7 +193,7 @@ kind load docker-image airflow-custom-image:1.0.0 --name airflow-cluster
 # defaultAirflowTag: "1.0.0" <-- novo
 
 # 21. Atualizando o Airflow com a imagem customizada
-helm upgrade --install airflow apache-airflow/airflow -n airflow -f ./main/deployer/airflow/values.yaml --debug
+helm upgrade --install airflow apache-airflow/airflow -n airflow -f ./main/deployer/airflow/values_bkp.yaml --debug
 
 # O comando acima instala o Airflow no namespace airflow com as configurações personalizadas do arquivo values.yaml
 # este arquivo contém as configaçoes padrão do Airflow, você pode editá-lo para personalizar as configurações do Airflow
@@ -232,28 +232,84 @@ kubectl exec airflow-webserver-79fd6d5ccd-dr7kv -n airflow -- airflow info
 # cole o conteúdo da chave publica no campo "key".
 # Importante: Marque a opção "Allow write access" para que o Airflow possa sincronizar os DAGs
 
-# 25. Configurando o gitSync para sincronizar os DAGs
-chmod 400 ~/.ssh/id_rsa
-kubectl create secret generic airflow-git-secret --from-file=gitSshKey=/root/.ssh/id_rsa -n airflow
+# # 25.1. Configurando o gitSync para sincronizar os DAGs
+# chmod 400 ~/.ssh/id_rsa
+# kubectl create secret generic airflow-git-secret --from-file=gitSshKey=/root/.ssh/id_rsa -n airflow
 
-# O comando acima cria um segredo chamado airflow-git-secret no namespace airflow
-# este segredo é utilizado para armazenar a chave SSH que será utilizada pelo gitSync para sincronizar os DAGs
-# a chave SSH é necessária para autenticar o Airflow no repositório Git e baixar os DAGs
+# # O comando acima cria um segredo chamado airflow-git-secret no namespace airflow
+# # este segredo é utilizado para armazenar a chave SSH que será utilizada pelo gitSync para sincronizar os DAGs
+# # a chave SSH é necessária para autenticar o Airflow no repositório Git e baixar os DAGs
+# # apos criar o segredo iremos atualizar o arquivo values.yaml com as configurações do gitSync
+# # gitSync:
+# # sshKeySecret: airflow-git-secret
+
+#25.2. Configurando o gitSync para sincronizar os DAGs usando credenciais de usuário e senha do github
+export GIT_SYNC_USERNAME=<seu_usuario_github>
+export GIT_SYNC_PASSWORD=<sua_senha_github>
+export GITSYNC_USERNAME=<seu_usuario_github>
+export GITSYNC_PASSWORD=<sua_senha_github>
+
+# O comando acima define as variáveis de ambiente GIT_SYNC_USERNAME e GIT_SYNC_PASSWORD
+# estas variáveis são utilizadas para armazenar as credenciais de usuário e senha do GitHub
+# as credenciais de usuário e senha são necessárias para autenticar o Airflow no repositório Git e baixar os DAGs
+# apos definir as variáveis de ambiente, iremos executar o script git-credentials.py para criar o arquivo git-credentials.yaml
+
+
+python3 ./main/deployer/airflow/credentials/git-credentials.py
+
+# O comando acima cria um arquivo chamado git-credentials.yaml no diretório ./main/deployer/airflow/credentials
+# este arquivo contém as credenciais de usuário e senha do GitHub que serão utilizadas pelo gitSync para sincronizar os DAGs
+# as credenciais de usuário e senha são necessárias para autenticar o Airflow no repositório Git e baixar os DAGs
+# apos criar o arquivo git-credentials.yaml iremos aplicá-lo no cluster Kubernetes
+
+kubectl apply -f ./main/deployer/airflow/credentials/git-credentials.yaml -n airflow
+
+# O comando acima cria um segredo chamado airflow-git-credentials no namespace airflow
+# este segredo é utilizado para armazenar as credenciais de usuário e senha do GitHub
+# as credenciais são necessárias para autenticar o Airflow no repositório Git e baixar os DAGs
 # apos criar o segredo iremos atualizar o arquivo values.yaml com as configurações do gitSync
-# gitSync:
-# sshKeySecret: airflow-git-secret
 
 # 26. Atualizando o Airflow com as configurações do gitSync
-helm upgrade --install airflow apache-airflow/airflow -n airflow -f ./main/deployer/airflow/values.yaml --debug
+helm upgrade --install airflow apache-airflow/airflow -n airflow -f ./main/deployer/airflow/values_bkp.yaml --debug
 
 # O comando acima instala o Airflow no namespace airflow com as configurações personalizadas do arquivo values.yaml
 # este arquivo contém as configurações padrão do Airflow, você pode editá-lo para personalizar as configurações do Airflow
 
 # 27. Validando a atualização
 kubectl get pods -n airflow
-kubectl logs airflow-scheduler-7fdbdfd64d-zp248 -c git-sync -n airflow
 
+# Validando os logs do git-sync
+kubectl logs airflow-scheduler-95c96c679-mjlbz -n airflow -c git-sync
 
+# O comando acima exibe os logs do container git-sync no pod airflow-scheduler no namespace airflow
+# você deve ver mensagens indicando que o gitSync está sincronizando os DAGs do repositório Git
+# caso haja algum problema na sincronização, você pode verificar os logs para identificar o problema
+
+# 28. Criando PV e PVC para o Airflow 
+kubectl apply -f ./main/deployer/airflow/pv.yaml
+
+# O comando acima cria um PersistentVolume (PV) e um PersistentVolumeClaim (PVC) para o Airflow
+# o PV é utilizado para armazenar os dados persistentes do Airflow, como por exemplo, os logs e o banco de dados
+# o PVC é utilizado para solicitar o armazenamento persistente do PV
+# desta forma, os dados do Airflow serão armazenados de forma persistente no cluster Kubernetes
+
+# 29. Validando a criação do PV e PVC
+kubectl get pv,pvc -n airflow
+
+# O comando acima deve retornar a lista de PersistentVolumes (PV) e PersistentVolumeClaims (PVC) do namespace airflow
+# você deve ver o PV e o PVC que foram criados anteriormente
+# o status do PV deve ser Available e o status do PVC deve ser Bound
+
+# 30. Atualizando o Airflow com o PV e PVC
+helm upgrade --install airflow apache-airflow/airflow -n airflow -f ./main/deployer/airflow/values_bkp.yaml --debug --timeout 10m0s
+
+# O comando acima instala o Airflow no namespace airflow com as configurações personalizadas do arquivo values.yaml
+# este arquivo contém as configurações padrão do Airflow, você pode editá-lo para personalizar as configurações do Airflow
+# de acordo com suas necessidades
+# Importante: O arquivo values.yaml é um arquivo de configuração do Helm, ele é utilizado para definir as configurações
+# do pacote que será instalado no cluster Kubernetes
+# caso você deseje alterar as configurações do Airflow, você pode editar este arquivo e depois instalar o Airflow novamente
+# para aplicar as alterações
 
 
 # XX.  Acessando o Airflow
@@ -269,4 +325,3 @@ kubectl port-forward svc/airflow-webserver 8080:8080 -n airflow
 # através de um endereço local, caso a porta 8080 esteja em uso, você pode alterar a porta de encaminhamento
 # basta alterar o segundo valor do comando, por exemplo: kubectl port-forward svc/airflow-webserver 8081:8080 -n airflow
 # neste caso, o Airflow estará acessível através do endereço http://127.0.0.1:8081
-
