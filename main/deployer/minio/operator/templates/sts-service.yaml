@@ -1,0 +1,13 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: sts
+  namespace: {{ .Release.Namespace }}
+  labels: {{- include "minio-operator.labels" . | nindent 4 }}
+spec:
+  type: ClusterIP
+  ports:
+    # - port: 4223
+    - port: 9000
+      name: https
+  selector: {{- include "minio-operator.selectorLabels" . | nindent 4 }}

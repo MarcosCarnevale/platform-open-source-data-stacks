@@ -21,3 +21,10 @@ kubectl version --client
 
 # Permitir execução do script
 chmod +x instaladores/install_kubectl.sh
+
+
+# Configura kubectl para usar o cluster
+kubectl config use-context kind-$FIRST_CLUSTER
+
+# Verifica a configuração atual
+kubectl cluster-info

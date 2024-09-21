@@ -20,4 +20,9 @@ echo "Instalando o Kubectl..."
 
 echo "Todas as instalações concluídas!"
 
+# Dando permissão para o Docker
+sudo usermod -aG docker $USER
+sudo chmod 666 /var/run/docker.sock
+
+# Permitir execução do script
 chmod +x instaladores/install_all.sh
