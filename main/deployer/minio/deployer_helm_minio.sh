@@ -26,15 +26,18 @@ helm install \
   --create-namespace \
   $NAMESPACE ./tenant
 
-# Aguarde até que o serviço esteja disponível
-sleep 10  # Ajuste o tempo conforme necessário
+# Aguardando o Pod do MinIO
+sleep 10
 
-# Verificar se o serviço está disponível
-kubectl get svc -n $NAMESPACE
+# Verificando o estado dos Pods
+kubectl get pods -n $NAMESPACE
+kubectl describe pods -n $NAMESPACE  # Adicionado para detalhes
+
+# Aguarde até que o serviço esteja disponível
 sleep 15
 
 # Expondo a porta MinIO do Tenant (port-forward) em segundo plano
-kubectl port-forward svc/myminio-hl 9000 -n $NAMESPACE &
+kubectl port-forward svc/myminio-hl 9000:9000 -n $NAMESPACE &
 
 # Aguardando um pouco mais para garantir que o port-forward está ativo
 sleep 30
@@ -45,5 +48,3 @@ mc mb myminio/mybucket --insecure
 
 # Verificando os Pods e port-forward
 kubectl get pods -n $NAMESPACE
-
-chmod +x deployer_helm_minio.sh
