@@ -1,6 +1,8 @@
 #!/bin/bash
+
 # Nome do novo cluster
 NEW_CLUSTER_NAME="open-source"
+CONFIG_FILE="kind-config.yaml"  # Nome do arquivo de configuração
 
 # Atualizar o sistema
 sudo apt update
@@ -22,8 +24,7 @@ sudo mv ./kind /usr/local/bin/kind
 kind version
 
 # Permitir execução do script
-chmod +x instaladores/install_kind.sh
-
+chmod +x install_kind.sh
 
 # Lista todos os clusters existentes
 CLUSTERS=$(kind get clusters)
@@ -33,8 +34,8 @@ if [ -n "$CLUSTERS" ]; then
     FIRST_CLUSTER=$(echo "$CLUSTERS" | head -n 1)
     echo "Usando o cluster existente: '$FIRST_CLUSTER'."
 else
-    # Se não houver clusters, crie um novo com o nome definido
-    echo "Nenhum cluster encontrado. Criando um novo cluster '$NEW_CLUSTER_NAME'."
-    kind create cluster --name "$NEW_CLUSTER_NAME"
+    # Se não houver clusters, crie um novo com o arquivo de configuração
+    echo "Nenhum cluster encontrado. Criando um novo cluster '$NEW_CLUSTER_NAME' com configuração personalizada."
+    kind create cluster --name "$NEW_CLUSTER_NAME" --config "$CONFIG_FILE"
     FIRST_CLUSTER="$NEW_CLUSTER_NAME"
 fi
