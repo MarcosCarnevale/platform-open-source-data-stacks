@@ -24,4 +24,4 @@ sudo mv linux-amd64/helm /usr/local/bin/helm
 helm version
 
 # Permitir execução do script
-chmod +x instaladores/install_helm.sh
+chmod +x install_helm.sh

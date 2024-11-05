@@ -5,10 +5,10 @@ Antes de instalar o que está contido nessa pasta instale o WSL e configure no D
 
 Feito isso e com o WSL rodando no Visual Studio execute o seguinte comando para ajustar a sed do arquivo de execução.
 ```sh
-sed -i -e 's/\r$//' instaladores/install_all.sh
+sed -i -e 's/\r$//' install_all.sh
 ```
 
 Em seguida basta executar o script **install_all.sh**
 ```sh
-./instaladores/install_all.sh
+./install_all.sh
 ```

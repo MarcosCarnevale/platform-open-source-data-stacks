@@ -29,6 +29,8 @@ operator:
   serviceAccountAnnotations: []
   # additional labels to be applied to operator resources
   additionalLabels: {}
+  console:
+    enabled: true
   ###
   # Specify the Operator container image to use for the deployment.
   # ``image.tag``

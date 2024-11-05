@@ -3,6 +3,7 @@
 # Atualizar o sistema
 sudo apt update
 sudo apt upgrade -y
+sudo apt autoremove -y
 
 # Instalar curl (se não estiver instalado)
 sudo apt install curl -y
@@ -20,7 +21,7 @@ sudo mv ./kubectl /usr/local/bin/kubectl
 kubectl version --client
 
 # Permitir execução do script
-chmod +x instaladores/install_kubectl.sh
+chmod +x install_kubectl.sh
 
 
 # Configura kubectl para usar o cluster

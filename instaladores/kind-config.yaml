@@ -1,0 +1,27 @@
+kind: Cluster
+apiVersion: kind.x-k8s.io/v1alpha4
+networking:
+  disableDefaultCNI: false
+nodes:
+  - role: control-plane
+    extraPortMappings:
+      - containerPort: 30000
+        hostPort: 30000
+        protocol: TCP
+    kubeadmConfigPatches:
+      - |
+        kind: InitConfiguration
+        nodeRegistration:
+          kubeletExtraArgs:
+            node-labels: "ingress-ready=true"
+      - |
+        kind: KubeletConfiguration
+        apiVersion: kubelet.config.k8s.io/v1beta1
+        cpuManagerPolicy: "static"
+        cpuCFSQuota: true
+        kubeReserved:
+          cpu: "500m"          # Alocando 500m de CPU para o Kubelet
+          memory: "2Gi"        # Alocando 2Gi de memória para o Kubelet
+        systemReserved:
+          cpu: "500m"          # Alocando 500m de CPU para o sistema
+          memory: "2Gi"        # Alocando 2Gi de memória para o sistema
